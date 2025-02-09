@@ -1,9 +1,13 @@
 import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score
+import joblib
 
 # Title of the app
-st.title("Excel Data Preparation App")
+st.title("Excel Data Preparation and Model Training App")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload your Excel file", type=["xlsx", "xls"])
@@ -82,5 +86,44 @@ if uploaded_file is not None:
         file_name="cleaned_data.csv",
         mime="text/csv",
     )
+
+    # Model Training Section
+    st.subheader("Model Training")
+
+    # Check if the data has a target column
+    target_column = st.selectbox("Select the target column for model training:", df.columns)
+    if target_column:
+        # Separate features and target
+        X = df.drop(columns=[target_column])
+        y = df[target_column]
+
+        # Split data into training and testing sets
+        test_size = st.slider("Select test set size (percentage):", 10, 50, 20) / 100
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=42)
+
+        # Choose a model
+        model_option = st.selectbox("Choose a model:", ["Random Forest Classifier"])
+
+        if model_option == "Random Forest Classifier":
+            model = RandomForestClassifier()
+
+        # Train the model
+        if st.button("Train Model"):
+            st.write("Training the model...")
+            model.fit(X_train, y_train)
+
+            # Make predictions
+            y_pred = model.predict(X_test)
+
+            # Display model performance
+            accuracy = accuracy_score(y_test, y_pred)
+            st.write(f"Model Accuracy: {accuracy:.2f}")
+
+            # Option to save the trained model
+            if st.button("Save Model"):
+                model_filename = "trained_model.pkl"
+                joblib.dump(model, model_filename)
+                st.write(f"Model saved as {model_filename}")
+
 else:
     st.write("Please upload an Excel file to get started.")
